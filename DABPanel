@@ -1,0 +1,271 @@
+package edu.vt.cs5044;
+
+import static edu.vt.cs5044.DABGuiName.*;
+import edu.vt.cs5044.DABGame;
+import edu.vt.cs5044.DABGrid;
+import edu.vt.cs5044.Direction;
+import edu.vt.cs5044.DotsAndBoxes;
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.util.Map;
+import javax.swing.*;
+
+/**
+ * This is my Dots & Boxes Game GUI. This runs my DABGame class.
+ * 
+ * @author sugie
+ * @version 27 Nov 2018
+ */
+public class DABPanel
+    extends JPanel
+{
+
+    private final DotsAndBoxes         game;
+
+    private final JLabel               p1ScoreLabel;
+    private final JLabel               p2ScoreLabel;
+    private final JLabel               turnLabel;
+    private final JComboBox<Integer>   xCombo;
+    private final JComboBox<Integer>   yCombo;
+    private final JComboBox<Direction> dirCombo;
+    private final JButton              drawButton;
+    private final DABGrid              dabGrid;
+
+
+    /**
+     * Create a new DABPanel object.
+     * 
+     * @param frame
+     *            this frame is the GUI.
+     */
+    public DABPanel(JFrame frame)
+    {
+
+        // add a menu bar to the frame that will contain this panel:
+        frame.setJMenuBar(setupMenuBar());
+
+        // create a new DotAndBoxes instance that will act as the game engine:
+        game = new DABGame();
+
+        // construct and name the user interface components
+        // each component needs a unique name for automated testing purpose
+        xCombo = new JComboBox<>();
+        xCombo.setName(X_COMBO);
+
+        yCombo = new JComboBox<>();
+        yCombo.setName(Y_COMBO);
+
+        dirCombo = new JComboBox<>(Direction.values());
+        dirCombo.setName(DIR_COMBO);
+
+        drawButton = new JButton("DRAW!");
+        drawButton.setName(DRAW_BUTTON);
+        drawButton.addActionListener(this::handleDrawButton);
+
+        turnLabel = new JLabel();
+        turnLabel.setName(TURN_LABEL);
+
+        p1ScoreLabel = new JLabel();
+        p1ScoreLabel.setName(P1_SCORE_LABEL);
+
+        p2ScoreLabel = new JLabel();
+        p2ScoreLabel.setName(P2_SCORE_LABEL);
+
+        dabGrid = new DABGrid(game);
+        dabGrid.setName(DAB_GRID);
+
+        // layout all of the user interface components:
+        setupLayout();
+
+        // begin a new 3x3 game by default:
+        startGame(3);
+
+    }
+
+
+    /**
+     * This method draws the edges.
+     */
+    private void handleDrawButton(ActionEvent ae)
+    {
+        Direction dir = (Direction)dirCombo.getSelectedItem();
+        Coordinate coord =
+            new Coordinate((int)xCombo.getSelectedItem(), (int)yCombo.getSelectedItem());
+
+        if (game.drawEdge(coord, dir))
+        {
+            updateStatus();
+        }
+
+    }
+
+
+    /**
+     * This method updates the status of the game.
+     */
+    private void updateStatus()
+    {
+        Map<Player, Integer> score = game.getScores();
+        turnLabel.setText("Player " + game.getCurrentPlayer() + " Go!");
+        p1ScoreLabel.setText("ONE: " + score.get(Player.ONE));
+        p2ScoreLabel.setText("TWO: " + score.get(Player.TWO));
+
+        if (game.getCurrentPlayer() == null)
+        {
+            drawButton.setEnabled(false);
+            turnLabel.setText("Game Over!");
+        }
+
+        else
+        {
+            drawButton.setEnabled(true);
+        }
+
+        repaint();
+
+    }
+
+
+    /**
+     * This method updates the combos.
+     */
+    private void updateCombos()
+    {
+        xCombo.removeAllItems();
+        yCombo.removeAllItems();
+        for (int i = 0; i < game.getSize(); i++)
+        {
+            xCombo.addItem(i);
+            yCombo.addItem(i);
+        }
+
+    }
+
+
+    /**
+     * This method starts the game.
+     */
+    private void startGame(int size)
+    {
+        game.init(size);
+        updateCombos();
+        updateStatus();
+        drawButton.isEnabled();
+
+    }
+
+
+    /**
+     * This method sets up the layout.
+     */
+    private void setupLayout()
+    {
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.PAGE_AXIS));
+
+        JPanel turnPanel = new JPanel();
+        topPanel.add(turnPanel);
+        turnPanel.add(turnLabel);
+        turnLabel.setText(" ");
+
+        JPanel drawPanel = new JPanel();
+        drawPanel.setLayout(new BoxLayout(drawPanel, BoxLayout.LINE_AXIS));
+        topPanel.add(drawPanel);
+        drawPanel.add(xCombo);
+        drawPanel.add(yCombo);
+        drawPanel.add(dirCombo);
+        drawPanel.add(drawButton);
+
+        dabGrid.setLayout(new BoxLayout(dabGrid, BoxLayout.LINE_AXIS));
+
+        JPanel botPanel = new JPanel();
+        botPanel.setLayout(new BoxLayout(botPanel, BoxLayout.LINE_AXIS));
+
+        JPanel p1Score = new JPanel();
+        p1Score.add(p1ScoreLabel, BorderLayout.LINE_START);
+        botPanel.add(p1Score);
+        p1ScoreLabel.setText(" ");
+
+        JPanel p2Score = new JPanel();
+        p2Score.add(p2ScoreLabel, BorderLayout.LINE_END);
+        botPanel.add(p2Score);
+        p2ScoreLabel.setText(" ");
+
+        setLayout(new BorderLayout());
+        add(topPanel, BorderLayout.PAGE_START);
+        add(dabGrid, BorderLayout.CENTER);
+        add(botPanel, BorderLayout.PAGE_END);
+
+    }
+
+
+    /**
+     * This method sets up the menu bar.
+     */
+    private JMenuBar setupMenuBar()
+    {
+        JMenuBar menuBar = new JMenuBar();
+        JMenu gameMenu = new JMenu("Game");
+        menuBar.add(gameMenu);
+        JMenu newMenu = new JMenu("New");
+        gameMenu.add(newMenu);
+
+        JMenuItem menuItemStart2X2 = new JMenuItem("Size 2 X 2");
+        menuItemStart2X2.addActionListener(e -> startGame(2)); // call startGame2
+        newMenu.add(menuItemStart2X2);
+
+        JMenuItem menuItemStart3X3 = new JMenuItem("Size 3 X 3");
+        menuItemStart3X3.addActionListener(e -> startGame(3)); // call startGame3
+        newMenu.add(menuItemStart3X3);
+
+        JMenuItem menuItemStart4X4 = new JMenuItem("Size 4 X 4");
+        menuItemStart4X4.addActionListener(e -> startGame(4)); // call startGame4
+        newMenu.add(menuItemStart4X4);
+
+        JCheckBoxMenuItem interactiveMode = new JCheckBoxMenuItem("Interactive Grid");
+        interactiveMode.addActionListener(e -> {
+            if (interactiveMode.isSelected())
+            {
+                dabGrid.setCallback(this::updateStatus);
+            }
+            else
+            {
+                dabGrid.setCallback(null);
+            }
+        });
+        gameMenu.add(interactiveMode);
+
+        return menuBar;
+    }
+
+
+    /**
+     * This method creates and shows the GUI.
+     */
+    private static void createAndShowGUI()
+    {
+        // Boilerplate code; no changes required
+        JFrame frame = new JFrame("Dots And Boxes");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        JComponent newContentPane = new DABPanel(frame);
+        newContentPane.setOpaque(true);
+        frame.setContentPane(newContentPane);
+        frame.pack();
+        frame.setVisible(true);
+    }
+
+
+    /**
+     * This method runs the DABGame GUI.
+     * 
+     * @param args
+     *            is the GUI parameter.
+     */
+    public static void main(String[] args)
+    {
+        // Boilerplate code; no changes required
+        // Note the use of a method reference to simplify this code
+        SwingUtilities.invokeLater(DABPanel::createAndShowGUI);
+    }
+
+}
